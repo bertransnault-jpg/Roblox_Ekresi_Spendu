@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>MISSION: EKSKRESI 3D — SMP Negeri 2 Belang</title>
+<style>
+:root{--cyan:#43e7f5;--gold:#ffd166;--navy:#07162c;--panel:rgba(7,22,44,.91)}
+*{box-sizing:border-box}body{margin:0;overflow:hidden;background:#07162c;color:#f5fbff;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}
+#game{position:fixed;inset:0}canvas{display:block}
+.panel{background:var(--panel);border:1px solid rgba(91,224,255,.4);border-radius:16px;box-shadow:0 12px 36px #0005;backdrop-filter:blur(12px)}
+#top{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;gap:10px;pointer-events:none;align-items:flex-start}
+#brand{padding:12px 15px;max-width:70%}#brand b{font-size:clamp(14px,2vw,21px);letter-spacing:.08em;color:var(--cyan)}#brand small{display:block;color:#b8cde4;margin-top:3px}
+#stats{padding:11px 14px;text-align:right;min-width:125px;font-size:13px}#stats strong{color:var(--gold);font-size:18px}
+#mission{position:absolute;left:14px;top:105px;padding:12px 14px;width:min(270px,45vw);font-size:13px}
+#mission h3{margin:0 0 8px;color:var(--gold);font-size:14px}#mission .sub{color:#b8cde4;margin-bottom:8px}
+.bar{height:7px;background:#1a3552;border-radius:20px;overflow:hidden;margin:7px 0}.bar span{display:block;height:100%;background:linear-gradient(90deg,#37d9e9,#ffd166);width:0%;transition:width .3s}
+#missionList{line-height:1.7;color:#dce9f7}#missionList .done{color:#70f0b5}
+#hint{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);padding:14px 18px;max-width:min(500px,90vw);text-align:center;display:none}
+#hint h2{margin:0 0 8px;color:var(--cyan)}#hint p{margin:5px 0;color:#d8e8f8}
+#dialog{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(650px,calc(100vw - 24px));padding:15px 17px;display:none}
+#dialog h2{font-size:17px;color:var(--gold);margin:0 0 7px}#dialog p{margin:0 0 10px;line-height:1.45}
+#answers{display:grid;grid-template-columns:1fr 1fr;gap:8px}.answer,.btn{border:1px solid #4b779b;border-radius:10px;background:#112d4a;color:white;padding:10px;cursor:pointer;font:inherit;text-align:left;transition:.15s}.answer:hover,.btn:hover{border-color:var(--cyan);background:#174363}.answer:disabled{opacity:.55;cursor:default}
+#feedback{font-size:13px;min-height:20px;color:var(--gold);margin-top:8px}
+#menu{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:linear-gradient(120deg,#041326d9,#102e4bd9)}
+#menuCard{width:min(700px,100%);padding:clamp(22px,5vw,42px);text-align:center}
+.eyebrow{color:var(--cyan);letter-spacing:.18em;font-weight:800;font-size:12px}
+#menu h1{font-size:clamp(30px,7vw,58px);line-height:1.02;margin:12px 0;color:#fff;text-shadow:0 0 30px #2ed7f455}
+#menu h1 span{color:var(--cyan)}#menu p{color:#c5d7eb;line-height:1.6;max-width:550px;margin:12px auto 22px}
+.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}.primary{background:linear-gradient(110deg,#00b9d1,#2866d8);border:0;font-weight:800;text-align:center;padding:13px 22px}
+#guide{display:none;text-align:left;margin-top:18px;background:#0b2039;padding:14px;border-radius:12px;color:#d5e6f7;line-height:1.6}
+#bottom{position:absolute;right:14px;bottom:15px;display:flex;gap:8px;align-items:end}
+#controls{display:none;position:absolute;left:15px;bottom:20px;width:145px;height:130px}
+.pad{position:absolute;width:44px;height:44px;border-radius:12px;background:#0a2340cc;border:1px solid #63d9f0;color:white;font-size:20px;touch-action:none}
+#up{left:50px;top:0}#left{left:0;top:48px}#down{left:50px;top:48px}#right{left:100px;top:48px}
+#touchActions{display:none;position:absolute;right:14px;bottom:22px;gap:8px;flex-direction:column}
+#toast{position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);padding:10px 16px;display:none;color:#fff;font-weight:700}
+#helpLine{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:12px;color:#d0dfef;background:#07162caa;padding:7px 12px;border-radius:20px;white-space:nowrap}
+#pause{position:absolute;right:14px;top:86px}
+@media(max-width:600px){#mission{top:94px;width:190px;padding:9px;font-size:11px}#mission h3{font-size:12px}#stats{padding:8px;min-width:88px;font-size:11px}#brand{padding:9px}#brand small{font-size:10px}#answers{grid-template-columns:1fr}#dialog{bottom:8px;padding:12px}#helpLine{bottom:160px;font-size:10px}#controls,#touchActions{display:block}#touchActions{display:flex}#bottom{display:none}}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="top">
+ <div id="brand" class="panel"><b>MISSION: EKSKRESI 3D</b><small>SMP NEGERI 2 BELANG · LABORATORIUM TUBUH MANUSIA</small></div>
+ <div id="stats" class="panel">SKOR<br><strong id="score">0000</strong><br><span id="tokens">◆ 0/4 token</span></div>
+</div>
+<div id="mission" class="panel"><h3>📡 MISI AKTIF</h3><div class="sub" id="missionName">Aktivasi Pusat Penelitian</div><div class="bar"><span id="progress"></span></div><div id="missionList">Temui Profesor Bio</div></div>
+<button id="pause" class="btn" onclick="togglePause()">Ⅱ</button>
+<div id="hint" class="panel"><h2 id="hintTitle">Pusat Penelitian</h2><p id="hintText"></p><button class="btn primary" onclick="closeHint()">LANJUTKAN</button></div>
+<div id="dialog" class="panel"><h2 id="qTitle">Tantangan IPA</h2><p id="qText"></p><div id="answers"></div><div id="feedback"></div></div>
+<div id="toast" class="panel"></div>
+<div id="controls">
+ <button class="pad" id="up" data-key="w">▲</button><button class="pad" id="left" data-key="a">◀</button><button class="pad" id="down" data-key="s">▼</button><button class="pad" id="right" data-key="d">▶</button>
+</div>
+<div id="touchActions"><button class="btn" onclick="interact()">🔎 Periksa</button><button class="btn" onclick="jump()">⬆ Lompat</button></div>
+<div id="bottom"><button class="btn" onclick="interact()">E · INTERAKSI</button><button class="btn" onclick="jump()">SPACE · LOMPAT</button></div>
+<div id="helpLine">WASD / tombol arah: bergerak · Mouse: lihat sekitar · E: interaksi</div>
+<div id="menu"><div id="menuCard" class="panel"><div class="eyebrow">PETUALANGAN IPA · KELAS VIII</div><h1>MISSION:<br><span>EKSKRESI 3D</span></h1><div class="eyebrow">SMP NEGERI 2 BELANG</div><p>Jelajahi dunia sains 3D, aktifkan kembali pusat penelitian, dan pecahkan tantangan tentang ginjal, kulit, paru-paru, serta hati. Kumpulkan empat token organ untuk membuka ruang final!</p><div class="actions"><button class="btn primary" onclick="startGame()">▶ MULAI MISI</button><button class="btn" onclick="toggleGuide()">PANDUAN</button><button class="btn" onclick="showResults()">HASIL BELAJAR</button></div><div id="guide"><b>Cara bermain</b><br>• Komputer: WASD untuk bergerak, mouse untuk melihat, E untuk memeriksa objek, Space untuk melompat.<br>• HP/tablet: gunakan tombol arah di kiri, lalu tombol Periksa/Lompat di kanan.<br>• Dekati Profesor Bio atau kristal organ yang bercahaya untuk memulai tantangan. Jawaban benar memberi poin dan token.<br>• Zona terbuka dalam satu arena; cari empat kristal organ berwarna di sekitar laboratorium.</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+let scene,camera,renderer,player,clock,keys={},yaw=0,pitch=-.16,started=false,paused=false,questionOpen=false,score=0,tokenCount=0,completed=new Set(),currentQuestion=null,nearby=null,velocityY=0,onGround=true,mouseDown=false;
+const zones=[
+ {id:'kidney',name:'Kidney City · Ginjal',color:0xff5c85,pos:[-13,0,-8],token:'TOKEN GINJAL',desc:'Ginjal menyaring darah dan membantu membentuk urine.',qs:[
+ {q:'Unit fungsional ginjal disebut …',a:['Neuron','Alveolus','Nefron','Vili'],c:2,why:'Nefron adalah unit struktural dan fungsional ginjal.'},
+ {q:'Penyaringan darah pada nefron terutama terjadi di …',a:['Glomerulus','Ureter','Kandung kemih','Uretra'],c:0,why:'Filtrasi terjadi di glomerulus menuju kapsula Bowman.'},
+ {q:'Saluran yang membawa urine dari ginjal ke kandung kemih adalah …',a:['Uretra','Ureter','Trakea','Bronkus'],c:1,why:'Ureter mengalirkan urine menuju kandung kemih.'},
+ {q:'Urutan proses pembentukan urine yang tepat adalah …',a:['Sekresi–filtrasi–reabsorpsi','Filtrasi–reabsorpsi–sekresi/augmentasi','Reabsorpsi–sekresi–filtrasi','Ekskresi–pencernaan–filtrasi'],c:1,why:'Secara sederhana: filtrasi, reabsorpsi, lalu sekresi/augmentasi.'}]},
+ {id:'skin',name:'Skin Garden · Kulit',color:0xffc45c,pos:[13,0,-8],token:'TOKEN KULIT',desc:'Kulit mengeluarkan keringat dan membantu mengatur suhu tubuh.',qs:[
+ {q:'Organ yang mengeluarkan keringat adalah …',a:['Ginjal','Hati','Kulit','Jantung'],c:2,why:'Keringat dihasilkan oleh kelenjar keringat pada kulit.'},
+ {q:'Keringat membantu tubuh dengan cara …',a:['Menaikkan suhu tubuh','Membantu mendinginkan tubuh saat menguap','Membentuk sel darah','Mencerna protein'],c:1,why:'Penguapan keringat membantu melepaskan panas dari tubuh.'},
+ {q:'Kelenjar yang menghasilkan keringat disebut …',a:['Kelenjar minyak','Kelenjar ludah','Kelenjar keringat','Kelenjar tiroid'],c:2,why:'Kelenjar keringat menghasilkan cairan keringat.'},
+ {q:'Manakah yang termasuk zat dalam keringat?',a:['Air dan garam mineral','Oksigen murni saja','Empedu','Pati'],c:0,why:'Keringat terutama mengandung air dan sejumlah garam mineral.'}]},
+ {id:'lung',name:'Lung Tower · Paru-paru',color:0x6ce7df,pos:[-13,0,10],token:'TOKEN PARU-PARU',desc:'Paru-paru mengeluarkan karbon dioksida dan uap air melalui udara yang diembuskan.',qs:[
+ {q:'Zat sisa metabolisme yang dikeluarkan melalui paru-paru adalah …',a:['Urea','Karbon dioksida','Empedu','Glukosa'],c:1,why:'Karbon dioksida dihasilkan dalam respirasi sel dan dikeluarkan melalui paru-paru.'},
+ {q:'Pertukaran gas berlangsung terutama pada …',a:['Alveolus','Ureter','Epidermis','Kandung kemih'],c:0,why:'Alveolus memiliki permukaan tipis untuk pertukaran gas.'},
+ {q:'Saat ekspirasi normal, udara bergerak …',a:['Masuk ke paru-paru','Keluar dari paru-paru','Menuju ginjal','Ke lambung'],c:1,why:'Ekspirasi adalah proses mengeluarkan udara dari paru-paru.'},
+ {q:'Mengapa paru-paru termasuk organ ekskresi?',a:['Mengeluarkan CO₂ dan uap air','Menghasilkan urine','Membentuk keringat','Menyimpan feses'],c:0,why:'Paru-paru membuang karbon dioksida dan uap air sebagai zat sisa.'}]},
+ {id:'liver',name:'Liver Laboratory · Hati',color:0xffa34d,pos:[13,0,10],token:'TOKEN HATI',desc:'Hati membentuk urea dari pengolahan amonia; ginjal kemudian mengeluarkan urea melalui urine.',qs:[
+ {q:'Urea terutama dibentuk di …',a:['Paru-paru','Kandung kemih','Hati','Kulit'],c:2,why:'Hati mengubah amonia menjadi urea yang lebih aman untuk diangkut darah.'},
+ {q:'Setelah dibentuk di hati, urea dibawa oleh …',a:['Darah menuju ginjal','Udara ke alveolus','Keringat ke kulit','Makanan ke usus'],c:0,why:'Darah mengangkut urea dari hati ke ginjal.'},
+ {q:'Fungsi ginjal yang berhubungan dengan urea adalah …',a:['Membentuk oksigen','Mengeluarkan urea melalui urine','Menghasilkan empedu','Menyerap cahaya'],c:1,why:'Ginjal menyaring zat sisa seperti urea dari darah.'},
+ {q:'Salah satu fungsi hati adalah …',a:['Mengolah zat dan membantu detoksifikasi','Memompa darah ke seluruh tubuh','Menghasilkan urine langsung','Pertukaran gas utama'],c:0,why:'Hati mengolah berbagai zat dan membantu detoksifikasi.'}]}
+];
+const finalQs=[
+ {q:'Manakah pasangan organ dan zat sisa yang tepat?',a:['Ginjal—karbon dioksida','Paru-paru—karbon dioksida','Kulit—urine','Hati—oksigen'],c:1,why:'Paru-paru mengeluarkan karbon dioksida dan uap air.'},
+ {q:'Urine mengalir dari kandung kemih ke luar tubuh melalui …',a:['Ureter','Uretra','Nefron','Bronkus'],c:1,why:'Uretra membawa urine dari kandung kemih ke luar tubuh.'},
+ {q:'Ekskresi berbeda dari defekasi karena ekskresi adalah …',a:['Pengeluaran sisa metabolisme','Pengeluaran sisa makanan yang tidak tercerna','Proses mengunyah','Penyerapan nutrisi'],c:0,why:'Ekskresi membuang zat sisa metabolisme; defekasi membuang sisa makanan yang tidak tercerna.'},
+ {q:'Proses pengambilan kembali zat yang masih dibutuhkan tubuh dalam pembentukan urine disebut …',a:['Filtrasi','Reabsorpsi','Ventilasi','Defekasi'],c:1,why:'Reabsorpsi mengembalikan air dan zat yang masih dibutuhkan ke darah.'},
+ {q:'Pernyataan paling tepat tentang organ ekskresi adalah …',a:['Hanya ginjal yang membuang zat sisa','Kulit, ginjal, paru-paru, dan hati memiliki peran terkait ekskresi','Usus besar membentuk semua urine','Paru-paru mengeluarkan urea utama'],c:1,why:'Beberapa organ berperan dalam ekskresi dengan jenis zat sisa yang berbeda.'}
+];
+function el(id){return document.getElementById(id)}
+function init(){
+ scene=new THREE.Scene();scene.background=new THREE.Color(0x8bd7e9);scene.fog=new THREE.Fog(0x8bd7e9,38,95);
+ camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,200);
+ renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;el('game').appendChild(renderer.domElement);
+ clock=new THREE.Clock();scene.add(new THREE.HemisphereLight(0xd9f7ff,0x294363,2.1));
+ const sun=new THREE.DirectionalLight(0xffffff,2.3);sun.position.set(-15,28,18);sun.castShadow=true;scene.add(sun);
+ makeWorld();makePlayer();setupControls();addEventListener('resize',resize);renderer.domElement.addEventListener('click',()=>{if(started&&!questionOpen&&!paused&&innerWidth>700)renderer.domElement.requestPointerLock?.()});
+ document.addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement&&started&&!paused){yaw-=e.movementX*.0024;pitch=Math.max(-.65,Math.min(.35,pitch-e.movementY*.0018))}});
+ document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.code==='Space'){e.preventDefault();jump()}if(e.key.toLowerCase()==='e')interact();if(e.key==='Escape'&&started)togglePause()});
+ document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+ animate();
+}
+function mat(color,rough=.75,metal=0){return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal})}
+function box(x,y,z,sx,sy,sz,color,opts={}){let m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mat(color,.75,opts.metal||0));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m}
+function sphere(x,y,z,r,color,sx=1,sy=1,sz=1){let m=new THREE.Mesh(new THREE.SphereGeometry(r,24,18),mat(color,.45,.05));m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;scene.add(m);return m}
+function label(text,x,y,z,color='#ffffff',size=64){let c=document.createElement('canvas'),ctx=c.getContext('2d');c.width=512;c.height=128;ctx.fillStyle='rgba(4,18,38,.72)';ctx.roundRect(4,4,504,120,22);ctx.fill();ctx.font='bold 42px Arial';ctx.textAlign='center';ctx.fillStyle=color;ctx.fillText(text,256,80);let t=new THREE.CanvasTexture(c),s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true}));s.position.set(x,y,z);s.scale.set(5.2,1.3,1);scene.add(s);return s}
+function makeWorld(){
+ let floor= new THREE.Mesh(new THREE.PlaneGeometry(100,100),mat(0x183b50));floor.rotation.x=-Math.PI/2;floor.position.y=-.12;floor.receiveShadow=true;scene.add(floor);
+ for(let i=-4;i<=4;i++){box(i*7,.005,0,.12,.02,50,0x2b5368);box(0,.006,i*7,50,.02,.12,0x2b5368)}
+ // plaza
+ box(0,.12,0,17,.25,13,0x28647a);box(0,.27,0,14,.08,10,0x39879a);
+ // research center
+ box(0,2,-18,19,4,9,0x15314e);box(0,4.2,-18,20,.3,10,0x31b9d2);box(0,1,-13.35,3,2.5,.15,0x57d5e8);
+ for(let x of [-7,-3,3,7])box(x,2,-13.35,1.5,1.8,.18,0x58a8d5);
+ label('HUMAN BODY RESEARCH CENTER',0,6.1,-18,'#74f4ff');
+ // school sign
+ box(0,1.3,-3,12,1.5,.4,0x08213a);label('SMP NEGERI 2 BELANG',0,2.25,-3,'#ffd166');
+ // paths
+ for(let z of [-8,8])box(0,.02,z,3,.04,13,0x7c9baa);
+ for(let x of [-13,13])box(x,.025,0,13,.04,2.5,0x7c9baa);
+ // lamps and trees
+ for(let x of [-23,-19,19,23])for(let z of [-19,-7,7,19]){box(x,1.5,z,.15,3,.15,0x344b63);sphere(x,3.2,z,.48,0xffd166)}
+ for(let x of [-22,-18,18,22])for(let z of [-23,23]){box(x,.8,z,.7,1.6,.7,0x76533e);sphere(x,2,z,.95,0x39a878,1,1.1,1)}
+ // organ zones and distinct structures
+ zones.forEach((zone,i)=>{
+  let [x,y,z]=zone.pos,c=zone.color;
+  // zone platform + glowing beacon
+  let plat=new THREE.Mesh(new THREE.CylinderGeometry(4.2,4.5,.45,40),mat(0x1b3853,.35,.3));plat.position.set(x,.15,z);plat.receiveShadow=true;scene.add(plat);
+  let ring=new THREE.Mesh(new THREE.TorusGeometry(3.6,.08,8,64),new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.6}));ring.rotation.x=Math.PI/2;ring.position.set(x,.42,z);scene.add(ring);
+  // organ inspired sculptures
+  if(zone.id==='kidney'){
+   sphere(x-.75,2,z,.95,0xc9325a,.72,1.15,.48);sphere(x+.75,2,z,.95,0xc9325a,.72,1.15,.48);
+   sphere(x,2,z,.42,0xffc16c,.5,1,.5);
+   // nephron loop
+   let curve=new THREE.CatmullRomCurve3([new THREE.Vector3(x-1,3.2,z),new THREE.Vector3(x-1.4,4,z),new THREE.Vector3(x-.3,4.2,z),new THREE.Vector3(x+.4,3.6,z),new THREE.Vector3(x+.8,4,z)]);
+   let tube=new THREE.Mesh(new THREE.TubeGeometry(curve,30,.09,8,false),mat(0x66e5ff));scene.add(tube);
+  } else if(zone.id==='skin'){
+   box(x,1.4,z,4.2,1.2,2.7,0xf1a879);box(x,2.2,z,4.2,.55,2.7,0xffd1a1);
+   for(let j=-1;j<=1;j++){let t=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(x+j,2.5,z),new THREE.Vector3(x+j+.2,3.2,z+.2),new THREE.Vector3(x+j,3.6,z)]),14,.07,8,false),mat(0x45d7f0));scene.add(t);sphere(x+j,3.65,z,.13,0x45d7f0)}
+   for(let j=-1;j<=1;j++)sphere(x+j*1.1,3,z+.8,.16,0x63e7ff,.7,1.2,.7);
+  } else if(zone.id==='lung'){
+   // trachea and lungs
+   box(x,3.2,z,.35,1.6,.35,0x9ceaf0);
+   sphere(x-.8,2.2,z,.85,0x51b9cf,.72,1.2,.65);sphere(x+.8,2.2,z,.85,0x51b9cf,.72,1.2,.65);
+   for(let j of [-1,1]){let curve=new THREE.CatmullRomCurve3([new THREE.Vector3(x,3,z),new THREE.Vector3(x+j*.45,2.9,z),new THREE.Vector3(x+j*.75,2.7,z)]);scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve,12,.07,8,false),mat(0xe2ffff)))}
+  } else {
+   sphere(x,2.5,z,.95,0xb94b35,1.25,.8,.75);sphere(x+.65,2.3,z+.2,.5,0xd76a43,1,.8,.7);
+   let curve=new THREE.CatmullRomCurve3([new THREE.Vector3(x,3.2,z),new THREE.Vector3(x+.2,3.8,z),new THREE.Vector3(x+.6,3.7,z+.2)]);scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve,15,.1,8,false),mat(0xffd166)));
+  }
+  // pillar and token crystal
+  box(x,1,z-3.1,1.25,2,1.1,0x203c58);let crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.65),new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.7,metalness:.25,roughness:.2}));crystal.position.set(x,2.5,z-3.1);crystal.userData.zone=zone.id;crystal.userData.kind='zone';crystal.castShadow=true;scene.add(crystal);zone.mesh=crystal;
+  label(zone.name,x,5.2,z,'#ffffff');
+  // walls as landmarks
+  box(x-4.7,.8,z,.3,1.6,6,0x2a5269);box(x+4.7,.8,z,.3,1.6,6,0x2a5269);
+ });
+ // professor NPC
+ makeNPC(0,0,-10,'PROFESOR BIO',0x2c90d8,true);
+ // robot near central courtyard
+ sphere(2,.7,-7,.48,0xeaf7ff,.8,.8,.7);sphere(2,1.1,-7,.37,0x1c4c70,.9,.75,.7);sphere(1.85,1.15,-6.68,.08,0x58f4ff);sphere(2.15,1.15,-6.68,.08,0x58f4ff);label('NEO',2,2,-7,'#9ff9ff');
+ // final chamber
+ box(0,2,25,12,4,8,0x101e3c);box(0,4.2,25,13,.3,9,0x8b6cff);
+ sphere(0,3.1,25,1.35,0x5d6dff,.9,1.1,.9);label('FINAL CONTROL CHAMBER',0,5.8,25,'#e4d5ff');
+}
+function makeNPC(x,y,z,name,color,prof=false){
+ let g=new THREE.Group();g.position.set(x,y,z);
+ let body=new THREE.Mesh(new THREE.BoxGeometry(.8,1.1,.45),mat(prof?0xf2f7ff:color));body.position.y=1.1;body.castShadow=true;g.add(body);
+ let head=new THREE.Mesh(new THREE.SphereGeometry(.38,18,14),mat(0xe6b58e));head.position.y=1.95;head.castShadow=true;g.add(head);
+ let hair=new THREE.Mesh(new THREE.SphereGeometry(.39,18,8,0,Math.PI*2,0,Math.PI/2),mat(0x27334a));hair.position.y=2.08;g.add(hair);
+ for(let sx of [-.2,.2]){let leg=new THREE.Mesh(new THREE.BoxGeometry(.25,.75,.28),mat(0x263e60));leg.position.set(sx,.35,0);g.add(leg)}
+ let badge=new THREE.Mesh(new THREE.BoxGeometry(.18,.22,.04),mat(0x4ce3f3));badge.position.set(0,1.3,-.24);g.add(badge);
+ scene.add(g);g.userData={kind:prof?'prof':'npc',name};if(prof)window.prof=g;return g;
+}
+function makePlayer(){
+ player=new THREE.Group();
+ let torso=new THREE.Mesh(new THREE.BoxGeometry(.7,.9,.4),mat(0x1c76b8));torso.position.y=1.15;torso.castShadow=true;player.add(torso);
+ let head=new THREE.Mesh(new THREE.BoxGeometry(.48,.48,.42),mat(0xd9a77c));head.position.y=1.88;head.castShadow=true;player.add(head);
+ let hair=new THREE.Mesh(new THREE.BoxGeometry(.5,.16,.44),mat(0x26334a));hair.position.set(0,2.15,0);player.add(hair);
+ let bag=new THREE.Mesh(new THREE.BoxGeometry(.48,.55,.2),mat(0xffc857));bag.position.set(0,1.22,.29);player.add(bag);
+ for(let x of [-.22,.22]){let leg=new THREE.Mesh(new THREE.BoxGeometry(.22,.65,.24),mat(0x243955));leg.position.set(x,.35,0);player.add(leg);let arm=new THREE.Mesh(new THREE.BoxGeometry(.2,.65,.22),mat(0xd9a77c));arm.position.set(x*2,1.2,0);player.add(arm)}
+ player.position.set(0,0,2);scene.add(player);
+}
+function setupControls(){document.querySelectorAll('.pad').forEach(b=>{let k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;b.setPointerCapture(e.pointerId)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false))})}
+function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
+function startGame(){el('menu').style.display='none';started=true;paused=false;showToast('Misi dimulai! Temui Profesor Bio di depan pusat penelitian.');}
+function toggleGuide(){let g=el('guide');g.style.display=g.style.display==='block'?'none':'block'}
+function togglePause(){if(!started)return;paused=!paused;if(paused){el('hintTitle').textContent='Permainan Dijeda';el('hintText').textContent='Tekan LANJUTKAN untuk kembali menjelajah dunia 3D.';el('hint').style.display='block';}else el('hint').style.display='none'}
+function closeHint(){el('hint').style.display='none';if(paused)paused=false}
+function showToast(s){el('toast').textContent=s;el('toast').style.display='block';setTimeout(()=>el('toast').style.display='none',2600)}
+function showResults(){el('hintTitle').textContent='Hasil Belajar';el('hintText').textContent=`Skor saat ini: ${score}. Token organ: ${tokenCount}/4. Jawab tantangan di setiap zona untuk menguatkan pemahaman tentang fungsi organ ekskresi.`;el('hint').style.display='block'}
+function animate(){
+ requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);
+ if(started&&!paused&&!questionOpen){
+  let forward=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0),side=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
+  let dir=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));let right=new THREE.Vector3(dir.z,0,-dir.x);let move=new THREE.Vector3().addScaledVector(dir,-forward).addScaledVector(right,side);
+  if(move.length()>0){move.normalize();player.position.addScaledVector(move,dt*6.5);player.rotation.y=Math.atan2(move.x,move.z);player.children[0].position.y=1.15+Math.sin(performance.now()*.014)*.035}
+  velocityY-=16*dt;player.position.y+=velocityY*dt;if(player.position.y<=0){player.position.y=0;velocityY=0;onGround=true}
+  player.position.x=Math.max(-28,Math.min(28,player.position.x));player.position.z=Math.max(-27,Math.min(31,player.position.z));
+  if(window.prof)window.prof.children[0].position.y=1.1+Math.sin(performance.now()*.002)*.04;
+  zones.forEach(z=>{if(z.mesh&&!completed.has(z.id))z.mesh.rotation.y+=dt*.8;});
+  // proximity target
+  nearby=null;let p=player.position;
+  if(!completed.has('intro')&&Math.hypot(p.x,p.z+10)<3.5)nearby={kind:'prof',name:'Profesor Bio'};
+  zones.forEach(z=>{if(!completed.has(z.id)&&Math.hypot(p.x-z.pos[0],p.z-(z.pos[2]-3.1))<3.3)nearby={kind:'zone',zone:z,name:z.name}});
+  if(completed.size===5&&Math.hypot(p.x,p.z-25)<5)nearby={kind:'final',name:'Final Challenge'};
+  const target=new THREE.Vector3(p.x+Math.sin(yaw)*8, p.y+3.4, p.z+Math.cos(yaw)*8);
+  camera.position.lerp(new THREE.Vector3(p.x+Math.sin(yaw)*8,p.y+4.2,p.z+Math.cos(yaw)*8),.12);
+  camera.lookAt(p.x,p.y+1.15,p.z);
+  // camera yaw follows directional input, player can rotate view with mouse
+  if(nearby){el('helpLine').textContent='E / PERIKSA: '+nearby.name+' · Dekati objek untuk berinteraksi'}else el('helpLine').textContent=innerWidth<700?'Gunakan tombol arah · Periksa objek dengan tombol kanan':'WASD bergerak · Klik dunia lalu gerakkan mouse untuk melihat · E interaksi';
+  updateHUD();
+ }
+ renderer.render(scene,camera);
+}
+function jump(){if(started&&!paused&&!questionOpen&&onGround){velocityY=7.5;onGround=false}}
+function interact(){
+ if(!started||paused||questionOpen)return;
+ if(!nearby){showToast('Dekati Profesor Bio atau kristal organ yang bercahaya.');return}
+ if(nearby.kind==='prof'){completed.add('intro');openQuestion('brief',{title:'Pesan Profesor Bio',text:'Selamat datang, peneliti muda! Aktifkan empat zona organ dan kumpulkan semua token. Ingat, ekskresi adalah pengeluaran zat sisa metabolisme.',questions:[{q:'Manakah contoh proses ekskresi?',a:['Mengeluarkan karbon dioksida saat mengembuskan napas','Mengeluarkan sisa makanan yang tidak tercerna','Mengunyah makanan','Menyerap sari makanan'],c:0,why:'Mengeluarkan karbon dioksida adalah ekskresi. Defekasi adalah pengeluaran sisa makanan yang tidak tercerna.'}]});return}
+ if(nearby.kind==='zone'){let z=nearby.zone;openQuestion(z.id,{title:z.name,text:z.desc+' Jawab tantangan untuk mengaktifkan token zona.',questions:z.qs});return}
+ if(nearby.kind==='final'){openQuestion('final',{title:'FINAL CHALLENGE',text:'Hubungkan konsep dari semua zona dan pulihkan inti pusat penelitian!',questions:finalQs});}
+}
+function openQuestion(id,data){questionOpen=true;currentQuestion={id,data,index:0,correct:0,usedHint:false,firstTry:true};el('dialog').style.display='block';renderQuestion()}
+function renderQuestion(){
+ let s=currentQuestion,qs=s.data.questions,q=qs[s.index];el('qTitle').textContent=s.data.title+` · ${Math.min(s.index+1,qs.length)}/${qs.length}`;el('qText').textContent=(s.data.text? s.data.text+' ':'')+q.q;el('answers').innerHTML='';el('feedback').textContent='';
+ q.a.forEach((a,i)=>{let b=document.createElement('button');b.className='answer';b.textContent=String.fromCharCode(65+i)+'. '+a;b.onclick=()=>answer(i);el('answers').appendChild(b)});
+ let hint=document.createElement('button');hint.className='btn';hint.textContent='💡 Petunjuk';hint.style.marginTop='8px';hint.onclick=()=>{s.usedHint=true;el('feedback').textContent='Petunjuk: pikirkan fungsi organ dan ke mana zat sisa dikeluarkan.';};el('answers').appendChild(hint);
+}
+function answer(i){
+ let s=currentQuestion,q=s.data.questions[s.index];let buttons=[...el('answers').querySelectorAll('.answer')];buttons.forEach(b=>b.disabled=true);
+ if(i===q.c){s.correct++;let points=s.usedHint?75:100;score+=points;el('feedback').textContent='✓ Tepat! '+q.why;el('feedback').style.color='#75f0b7';}
+ else{ s.firstTry=false;el('feedback').textContent='Belum tepat. '+q.why;el('feedback').style.color='#ffd166';}
+ let next=document.createElement('button');next.className='btn primary';next.textContent=s.index<s.data.questions.length-1?'SOAL BERIKUTNYA →':'SELESAI ✓';next.style.marginTop='8px';next.onclick=()=>{
+  s.index++;
+  if(s.index<s.data.questions.length){s.usedHint=false;renderQuestion()}else finishQuestion()
+ };el('answers').appendChild(next);updateHUD();
+}
+function finishQuestion(){
+ let s=currentQuestion,id=s.id;score+=100;
+ if(zones.some(z=>z.id===id)&&!completed.has(id)){completed.add(id);tokenCount++;showToast('Token organ diperoleh! +100 bonus misi');}
+ if(id==='brief'){showToast('Pusat penelitian aktif. Cari empat zona organ!')}
+ if(id==='final'){completed.add('final');el('qTitle').textContent='🎉 MISI BERHASIL!';el('qText').textContent=`Kamu telah mengaktifkan inti pusat penelitian. Skor akhir: ${score}. Token organ: ${tokenCount}/4. Terus pelajari fungsi organ ekskresi!`;el('answers').innerHTML='<button class="btn primary" onclick="closeQuestion()">KEMBALI KE DUNIA</button><button class="btn" onclick="showResults()">HASIL BELAJAR</button>';el('feedback').textContent='Ekskresi berbeda dari defekasi. Ginjal, kulit, paru-paru, dan hati memiliki peran berbeda.';return}
+ el('qTitle').textContent='Tantangan selesai';el('qText').textContent=`Jawaban benar: ${s.correct}/${s.data.questions.length}. ${s.data.text||''}`;el('answers').innerHTML='<button class="btn primary" onclick="closeQuestion()">LANJUTKAN PETUALANGAN</button>';el('feedback').textContent='Progres tersimpan selama sesi ini. Bonus penyelesaian misi +100 poin.';updateHUD();
+}
+function closeQuestion(){el('dialog').style.display='none';questionOpen=false;currentQuestion=null;updateHUD()}
+function updateHUD(){
+ el('score').textContent=String(score).padStart(4,'0');el('tokens').textContent='◆ '+tokenCount+'/4 token';
+ let done=zones.filter(z=>completed.has(z.id)).length;let pct=Math.round((done/4)*100);el('progress').style.width=pct+'%';
+ let text=[];text.push((completed.has('intro')?'✓':'○')+' Temui Profesor Bio');zones.forEach(z=>text.push((completed.has(z.id)?'✓':'○')+' '+z.name.split(' · ')[1]));text.push((completed.has('final')?'✓':'○')+' Final Challenge');el('missionList').innerHTML=text.map(t=>`<div class="${t.startsWith('✓')?'done':''}">${t}</div>`).join('');
+ el('missionName').textContent=completed.has('final')?'Misi selesai!':!completed.has('intro')?'Aktivasi Pusat Penelitian':done===4?'Final Challenge':'Jelajahi empat zona organ';
+}
+init();
+</script>
+</body></html>
