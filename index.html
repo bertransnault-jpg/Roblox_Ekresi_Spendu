@@ -1,11 +1,30 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta charset="utf-8">
+<!-- Diperbolehkan pinch zoom-in dan zoom-out sesuai permintaan -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <title>MISSION: EKSKRESI 3D — SMP Negeri 2 Belang</title>
 <style>
 :root{--cyan:#43e7f5;--gold:#ffd166;--navy:#07162c;--panel:rgba(7,22,44,.91)}
-*{box-sizing:border-box}body{margin:0;overflow:hidden;background:#07162c;color:#f5fbff;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}
+*{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+body{
+  margin:0; overflow:hidden; background:#07162c; color:#f5fbff;
+  font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;
+  /* Mencegah teks terkesan sedang di-copy saat pengguna menekan tombol/layar */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  /* Kursor bulat kustom */
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="%2343e7f5" fill-opacity="0.75" stroke="%23ffffff" stroke-width="2"/></svg>') 12 12, auto;
+}
+
+/* Memastikan elemen interaktif juga menggunakan kursor bulat */
+button, a, input {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23ffd166" fill-opacity="0.85" stroke="%23ffffff" stroke-width="2"/></svg>') 12 12, auto;
+}
+
 #game{position:fixed;inset:0}canvas{display:block}
 .panel{background:var(--panel);border:1px solid rgba(91,224,255,.4);border-radius:16px;box-shadow:0 12px 36px #0005;backdrop-filter:blur(12px)}
 #top{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;gap:10px;pointer-events:none;align-items:flex-start}
@@ -17,11 +36,11 @@
 #missionList{line-height:1.7;color:#dce9f7}#missionList .done{color:#70f0b5}
 #hint{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);padding:14px 18px;max-width:min(500px,90vw);text-align:center;display:none}
 #hint h2{margin:0 0 8px;color:var(--cyan)}#hint p{margin:5px 0;color:#d8e8f8}
-#dialog{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(650px,calc(100vw - 24px));padding:15px 17px;display:none}
+#dialog{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(650px,calc(100vw - 24px));padding:15px 17px;display:none;z-index:50}
 #dialog h2{font-size:17px;color:var(--gold);margin:0 0 7px}#dialog p{margin:0 0 10px;line-height:1.45}
 #answers{display:grid;grid-template-columns:1fr 1fr;gap:8px}.answer,.btn{border:1px solid #4b779b;border-radius:10px;background:#112d4a;color:white;padding:10px;cursor:pointer;font:inherit;text-align:left;transition:.15s}.answer:hover,.btn:hover{border-color:var(--cyan);background:#174363}.answer:disabled{opacity:.55;cursor:default}
 #feedback{font-size:13px;min-height:20px;color:var(--gold);margin-top:8px}
-#menu{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:linear-gradient(120deg,#041326d9,#102e4bd9)}
+#menu{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:linear-gradient(120deg,#041326d9,#102e4bd9);z-index:100}
 #menuCard{width:min(700px,100%);padding:clamp(22px,5vw,42px);text-align:center}
 .eyebrow{color:var(--cyan);letter-spacing:.18em;font-weight:800;font-size:12px}
 #menu h1{font-size:clamp(30px,7vw,58px);line-height:1.02;margin:12px 0;color:#fff;text-shadow:0 0 30px #2ed7f455}
@@ -29,14 +48,25 @@
 .actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}.primary{background:linear-gradient(110deg,#00b9d1,#2866d8);border:0;font-weight:800;text-align:center;padding:13px 22px}
 #guide{display:none;text-align:left;margin-top:18px;background:#0b2039;padding:14px;border-radius:12px;color:#d5e6f7;line-height:1.6}
 #bottom{position:absolute;right:14px;bottom:15px;display:flex;gap:8px;align-items:end}
-#controls{display:none;position:absolute;left:15px;bottom:20px;width:145px;height:130px}
+#controls{display:none;position:absolute;left:15px;bottom:20px;width:145px;height:130px;z-index:20}
 .pad{position:absolute;width:44px;height:44px;border-radius:12px;background:#0a2340cc;border:1px solid #63d9f0;color:white;font-size:20px;touch-action:none}
 #up{left:50px;top:0}#left{left:0;top:48px}#down{left:50px;top:48px}#right{left:100px;top:48px}
-#touchActions{display:none;position:absolute;right:14px;bottom:22px;gap:8px;flex-direction:column}
-#toast{position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);padding:10px 16px;display:none;color:#fff;font-weight:700}
+#touchActions{display:none;position:absolute;right:14px;bottom:22px;gap:8px;flex-direction:column;z-index:20}
+#toast{position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);padding:10px 16px;display:none;color:#fff;font-weight:700;z-index:150}
 #helpLine{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:12px;color:#d0dfef;background:#07162caa;padding:7px 12px;border-radius:20px;white-space:nowrap}
 #pause{position:absolute;right:14px;top:86px}
-@media(max-width:600px){#mission{top:94px;width:190px;padding:9px;font-size:11px}#mission h3{font-size:12px}#stats{padding:8px;min-width:88px;font-size:11px}#brand{padding:9px}#brand small{font-size:10px}#answers{grid-template-columns:1fr}#dialog{bottom:8px;padding:12px}#helpLine{bottom:160px;font-size:10px}#controls,#touchActions{display:block}#touchActions{display:flex}#bottom{display:none}}
+@media(max-width:768px){
+  #mission{top:94px;width:190px;padding:9px;font-size:11px}
+  #mission h3{font-size:12px}
+  #stats{padding:8px;min-width:88px;font-size:11px}
+  #brand{padding:9px}
+  #brand small{font-size:10px}
+  #answers{grid-template-columns:1fr}
+  #dialog{bottom:8px;padding:12px}
+  #helpLine{bottom:160px;font-size:10px}
+  #controls,#touchActions{display:flex}
+  #bottom{display:none}
+}
 </style>
 </head>
 <body>
@@ -56,10 +86,23 @@
 <div id="touchActions"><button class="btn" onclick="interact()">🔎 Periksa</button><button class="btn" onclick="jump()">⬆ Lompat</button></div>
 <div id="bottom"><button class="btn" onclick="interact()">E · INTERAKSI</button><button class="btn" onclick="jump()">SPACE · LOMPAT</button></div>
 <div id="helpLine">WASD / tombol arah: bergerak · Mouse: lihat sekitar · E: interaksi</div>
-<div id="menu"><div id="menuCard" class="panel"><div class="eyebrow">PETUALANGAN IPA · KELAS VIII</div><h1>MISSION:<br><span>EKSKRESI 3D</span></h1><div class="eyebrow">SMP NEGERI 2 BELANG</div><p>Jelajahi dunia sains 3D, aktifkan kembali pusat penelitian, dan pecahkan tantangan tentang ginjal, kulit, paru-paru, serta hati. Kumpulkan empat token organ untuk membuka ruang final!</p><div class="actions"><button class="btn primary" onclick="startGame()">▶ MULAI MISI</button><button class="btn" onclick="toggleGuide()">PANDUAN</button><button class="btn" onclick="showResults()">HASIL BELAJAR</button></div><div id="guide"><b>Cara bermain</b><br>• Komputer: WASD untuk bergerak, mouse untuk melihat, E untuk memeriksa objek, Space untuk melompat.<br>• HP/tablet: gunakan tombol arah di kiri, lalu tombol Periksa/Lompat di kanan.<br>• Dekati Profesor Bio atau kristal organ yang bercahaya untuk memulai tantangan. Jawaban benar memberi poin dan token.<br>• Zona terbuka dalam satu arena; cari empat kristal organ berwarna di sekitar laboratorium.</div></div></div>
+<div id="menu">
+  <div id="menuCard" class="panel">
+    <div class="eyebrow">PETUALANGAN IPA · KELAS VIII</div>
+    <h1>MISSION:<br><span>EKSKRESI 3D</span></h1>
+    <div class="eyebrow">SMP NEGERI 2 BELANG</div>
+    <p>Jelajahi dunia sains 3D, aktifkan kembali pusat penelitian, dan pecahkan tantangan tentang ginjal, kulit, paru-paru, serta hati. Kumpulkan empat token organ untuk membuka ruang final!</p>
+    <div class="actions">
+      <button class="btn primary" onclick="startGame()">▶ MULAI MISI</button>
+      <button class="btn" onclick="toggleGuide()">PANDUAN</button>
+      <button class="btn" onclick="showResults()">HASIL BELAJAR</button>
+    </div>
+    <div id="guide"><b>Cara bermain</b><br>• Komputer: WASD untuk bergerak, mouse untuk melihat, E untuk memeriksa objek, Space untuk melompat.<br>• HP/tablet: gunakan tombol arah di kiri, lalu tombol Periksa/Lompat di kanan.<br>• Dekati Profesor Bio atau kristal organ yang bercahaya untuk memulai tantangan. Jawaban benar memberi poin dan token.<br>• Zona terbuka dalam satu arena; cari empat kristal organ berwarna di sekitar laboratorium.</div>
+  </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
-let scene,camera,renderer,player,clock,keys={},yaw=0,pitch=-.16,started=false,paused=false,questionOpen=false,score=0,tokenCount=0,completed=new Set(),currentQuestion=null,nearby=null,velocityY=0,onGround=true,mouseDown=false;
+let scene,camera,renderer,player,clock,keys={},yaw=0,pitch=-.16,started=false,paused=false,questionOpen=false,score=0,tokenCount=0,completed=new Set(),currentQuestion=null,nearby=null,velocityY=0,onGround=true;
 const zones=[
  {id:'kidney',name:'Kidney City · Ginjal',color:0xff5c85,pos:[-13,0,-8],token:'TOKEN GINJAL',desc:'Ginjal menyaring darah dan membantu membentuk urine.',qs:[
  {q:'Unit fungsional ginjal disebut …',a:['Neuron','Alveolus','Nefron','Vili'],c:2,why:'Nefron adalah unit struktural dan fungsional ginjal.'},
@@ -96,7 +139,7 @@ function init(){
  renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;el('game').appendChild(renderer.domElement);
  clock=new THREE.Clock();scene.add(new THREE.HemisphereLight(0xd9f7ff,0x294363,2.1));
  const sun=new THREE.DirectionalLight(0xffffff,2.3);sun.position.set(-15,28,18);sun.castShadow=true;scene.add(sun);
- makeWorld();makePlayer();setupControls();addEventListener('resize',resize);renderer.domElement.addEventListener('click',()=>{if(started&&!questionOpen&&!paused&&innerWidth>700)renderer.domElement.requestPointerLock?.()});
+ makeWorld();makePlayer();setupControls();addEventListener('resize',resize);renderer.domElement.addEventListener('click',()=>{if(started&&!questionOpen&&!paused&&innerWidth>768)renderer.domElement.requestPointerLock?.()});
  document.addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement&&started&&!paused){yaw-=e.movementX*.0024;pitch=Math.max(-.65,Math.min(.35,pitch-e.movementY*.0018))}});
  document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.code==='Space'){e.preventDefault();jump()}if(e.key.toLowerCase()==='e')interact();if(e.key==='Escape'&&started)togglePause()});
  document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
@@ -109,31 +152,22 @@ function label(text,x,y,z,color='#ffffff',size=64){let c=document.createElement(
 function makeWorld(){
  let floor= new THREE.Mesh(new THREE.PlaneGeometry(100,100),mat(0x183b50));floor.rotation.x=-Math.PI/2;floor.position.y=-.12;floor.receiveShadow=true;scene.add(floor);
  for(let i=-4;i<=4;i++){box(i*7,.005,0,.12,.02,50,0x2b5368);box(0,.006,i*7,50,.02,.12,0x2b5368)}
- // plaza
  box(0,.12,0,17,.25,13,0x28647a);box(0,.27,0,14,.08,10,0x39879a);
- // research center
  box(0,2,-18,19,4,9,0x15314e);box(0,4.2,-18,20,.3,10,0x31b9d2);box(0,1,-13.35,3,2.5,.15,0x57d5e8);
  for(let x of [-7,-3,3,7])box(x,2,-13.35,1.5,1.8,.18,0x58a8d5);
  label('HUMAN BODY RESEARCH CENTER',0,6.1,-18,'#74f4ff');
- // school sign
  box(0,1.3,-3,12,1.5,.4,0x08213a);label('SMP NEGERI 2 BELANG',0,2.25,-3,'#ffd166');
- // paths
  for(let z of [-8,8])box(0,.02,z,3,.04,13,0x7c9baa);
  for(let x of [-13,13])box(x,.025,0,13,.04,2.5,0x7c9baa);
- // lamps and trees
  for(let x of [-23,-19,19,23])for(let z of [-19,-7,7,19]){box(x,1.5,z,.15,3,.15,0x344b63);sphere(x,3.2,z,.48,0xffd166)}
  for(let x of [-22,-18,18,22])for(let z of [-23,23]){box(x,.8,z,.7,1.6,.7,0x76533e);sphere(x,2,z,.95,0x39a878,1,1.1,1)}
- // organ zones and distinct structures
  zones.forEach((zone,i)=>{
   let [x,y,z]=zone.pos,c=zone.color;
-  // zone platform + glowing beacon
   let plat=new THREE.Mesh(new THREE.CylinderGeometry(4.2,4.5,.45,40),mat(0x1b3853,.35,.3));plat.position.set(x,.15,z);plat.receiveShadow=true;scene.add(plat);
   let ring=new THREE.Mesh(new THREE.TorusGeometry(3.6,.08,8,64),new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.6}));ring.rotation.x=Math.PI/2;ring.position.set(x,.42,z);scene.add(ring);
-  // organ inspired sculptures
   if(zone.id==='kidney'){
    sphere(x-.75,2,z,.95,0xc9325a,.72,1.15,.48);sphere(x+.75,2,z,.95,0xc9325a,.72,1.15,.48);
    sphere(x,2,z,.42,0xffc16c,.5,1,.5);
-   // nephron loop
    let curve=new THREE.CatmullRomCurve3([new THREE.Vector3(x-1,3.2,z),new THREE.Vector3(x-1.4,4,z),new THREE.Vector3(x-.3,4.2,z),new THREE.Vector3(x+.4,3.6,z),new THREE.Vector3(x+.8,4,z)]);
    let tube=new THREE.Mesh(new THREE.TubeGeometry(curve,30,.09,8,false),mat(0x66e5ff));scene.add(tube);
   } else if(zone.id==='skin'){
@@ -141,7 +175,6 @@ function makeWorld(){
    for(let j=-1;j<=1;j++){let t=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(x+j,2.5,z),new THREE.Vector3(x+j+.2,3.2,z+.2),new THREE.Vector3(x+j,3.6,z)]),14,.07,8,false),mat(0x45d7f0));scene.add(t);sphere(x+j,3.65,z,.13,0x45d7f0)}
    for(let j=-1;j<=1;j++)sphere(x+j*1.1,3,z+.8,.16,0x63e7ff,.7,1.2,.7);
   } else if(zone.id==='lung'){
-   // trachea and lungs
    box(x,3.2,z,.35,1.6,.35,0x9ceaf0);
    sphere(x-.8,2.2,z,.85,0x51b9cf,.72,1.2,.65);sphere(x+.8,2.2,z,.85,0x51b9cf,.72,1.2,.65);
    for(let j of [-1,1]){let curve=new THREE.CatmullRomCurve3([new THREE.Vector3(x,3,z),new THREE.Vector3(x+j*.45,2.9,z),new THREE.Vector3(x+j*.75,2.7,z)]);scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve,12,.07,8,false),mat(0xe2ffff)))}
@@ -149,17 +182,12 @@ function makeWorld(){
    sphere(x,2.5,z,.95,0xb94b35,1.25,.8,.75);sphere(x+.65,2.3,z+.2,.5,0xd76a43,1,.8,.7);
    let curve=new THREE.CatmullRomCurve3([new THREE.Vector3(x,3.2,z),new THREE.Vector3(x+.2,3.8,z),new THREE.Vector3(x+.6,3.7,z+.2)]);scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve,15,.1,8,false),mat(0xffd166)));
   }
-  // pillar and token crystal
   box(x,1,z-3.1,1.25,2,1.1,0x203c58);let crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.65),new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.7,metalness:.25,roughness:.2}));crystal.position.set(x,2.5,z-3.1);crystal.userData.zone=zone.id;crystal.userData.kind='zone';crystal.castShadow=true;scene.add(crystal);zone.mesh=crystal;
   label(zone.name,x,5.2,z,'#ffffff');
-  // walls as landmarks
   box(x-4.7,.8,z,.3,1.6,6,0x2a5269);box(x+4.7,.8,z,.3,1.6,6,0x2a5269);
  });
- // professor NPC
  makeNPC(0,0,-10,'PROFESOR BIO',0x2c90d8,true);
- // robot near central courtyard
  sphere(2,.7,-7,.48,0xeaf7ff,.8,.8,.7);sphere(2,1.1,-7,.37,0x1c4c70,.9,.75,.7);sphere(1.85,1.15,-6.68,.08,0x58f4ff);sphere(2.15,1.15,-6.68,.08,0x58f4ff);label('NEO',2,2,-7,'#9ff9ff');
- // final chamber
  box(0,2,25,12,4,8,0x101e3c);box(0,4.2,25,13,.3,9,0x8b6cff);
  sphere(0,3.1,25,1.35,0x5d6dff,.9,1.1,.9);label('FINAL CONTROL CHAMBER',0,5.8,25,'#e4d5ff');
 }
@@ -181,7 +209,13 @@ function makePlayer(){
  for(let x of [-.22,.22]){let leg=new THREE.Mesh(new THREE.BoxGeometry(.22,.65,.24),mat(0x243955));leg.position.set(x,.35,0);player.add(leg);let arm=new THREE.Mesh(new THREE.BoxGeometry(.2,.65,.22),mat(0xd9a77c));arm.position.set(x*2,1.2,0);player.add(arm)}
  player.position.set(0,0,2);scene.add(player);
 }
-function setupControls(){document.querySelectorAll('.pad').forEach(b=>{let k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;b.setPointerCapture(e.pointerId)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false))})}
+function setupControls(){
+  document.querySelectorAll('.pad').forEach(b=>{
+    let k=b.dataset.key;
+    b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;b.setPointerCapture(e.pointerId)});
+    ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false));
+  });
+}
 function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
 function startGame(){el('menu').style.display='none';started=true;paused=false;showToast('Misi dimulai! Temui Profesor Bio di depan pusat penelitian.');}
 function toggleGuide(){let g=el('guide');g.style.display=g.style.display==='block'?'none':'block'}
@@ -199,16 +233,13 @@ function animate(){
   player.position.x=Math.max(-28,Math.min(28,player.position.x));player.position.z=Math.max(-27,Math.min(31,player.position.z));
   if(window.prof)window.prof.children[0].position.y=1.1+Math.sin(performance.now()*.002)*.04;
   zones.forEach(z=>{if(z.mesh&&!completed.has(z.id))z.mesh.rotation.y+=dt*.8;});
-  // proximity target
   nearby=null;let p=player.position;
   if(!completed.has('intro')&&Math.hypot(p.x,p.z+10)<3.5)nearby={kind:'prof',name:'Profesor Bio'};
   zones.forEach(z=>{if(!completed.has(z.id)&&Math.hypot(p.x-z.pos[0],p.z-(z.pos[2]-3.1))<3.3)nearby={kind:'zone',zone:z,name:z.name}});
   if(completed.size===5&&Math.hypot(p.x,p.z-25)<5)nearby={kind:'final',name:'Final Challenge'};
-  const target=new THREE.Vector3(p.x+Math.sin(yaw)*8, p.y+3.4, p.z+Math.cos(yaw)*8);
   camera.position.lerp(new THREE.Vector3(p.x+Math.sin(yaw)*8,p.y+4.2,p.z+Math.cos(yaw)*8),.12);
   camera.lookAt(p.x,p.y+1.15,p.z);
-  // camera yaw follows directional input, player can rotate view with mouse
-  if(nearby){el('helpLine').textContent='E / PERIKSA: '+nearby.name+' · Dekati objek untuk berinteraksi'}else el('helpLine').textContent=innerWidth<700?'Gunakan tombol arah · Periksa objek dengan tombol kanan':'WASD bergerak · Klik dunia lalu gerakkan mouse untuk melihat · E interaksi';
+  if(nearby){el('helpLine').textContent='E / PERIKSA: '+nearby.name+' · Dekati objek untuk berinteraksi'}else el('helpLine').textContent=innerWidth<768?'Gunakan tombol arah · Periksa objek dengan tombol kanan':'WASD bergerak · Klik dunia lalu gerakkan mouse untuk melihat · E interaksi';
   updateHUD();
  }
  renderer.render(scene,camera);
@@ -252,4 +283,5 @@ function updateHUD(){
 }
 init();
 </script>
-</body></html>
+</body>
+</html>
