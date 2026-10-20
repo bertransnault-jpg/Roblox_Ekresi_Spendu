@@ -2,7 +2,6 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<!-- Diperbolehkan pinch zoom-in dan zoom-out sesuai permintaan -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <title>MISSION: EKSKRESI 3D — SMP Negeri 2 Belang</title>
 <style>
@@ -11,20 +10,15 @@
 body{
   margin:0; overflow:hidden; background:#07162c; color:#f5fbff;
   font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;
-  /* Mencegah teks terkesan sedang di-copy saat pengguna menekan tombol/layar */
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  /* Kursor bulat kustom */
   cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="%2343e7f5" fill-opacity="0.75" stroke="%23ffffff" stroke-width="2"/></svg>') 12 12, auto;
 }
-
-/* Memastikan elemen interaktif juga menggunakan kursor bulat */
 button, a, input {
   cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23ffd166" fill-opacity="0.85" stroke="%23ffffff" stroke-width="2"/></svg>') 12 12, auto;
 }
-
 #game{position:fixed;inset:0}canvas{display:block}
 .panel{background:var(--panel);border:1px solid rgba(91,224,255,.4);border-radius:16px;box-shadow:0 12px 36px #0005;backdrop-filter:blur(12px)}
 #top{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;gap:10px;pointer-events:none;align-items:flex-start}
@@ -85,7 +79,7 @@ button, a, input {
 </div>
 <div id="touchActions"><button class="btn" onclick="interact()">🔎 Periksa</button><button class="btn" onclick="jump()">⬆ Lompat</button></div>
 <div id="bottom"><button class="btn" onclick="interact()">E · INTERAKSI</button><button class="btn" onclick="jump()">SPACE · LOMPAT</button></div>
-<div id="helpLine">WASD / tombol arah: bergerak · Mouse: lihat sekitar · E: interaksi</div>
+<div id="helpLine">Geser layar untuk rotasi kamera 360° · D-Pad: bergerak</div>
 <div id="menu">
   <div id="menuCard" class="panel">
     <div class="eyebrow">PETUALANGAN IPA · KELAS VIII</div>
@@ -97,12 +91,14 @@ button, a, input {
       <button class="btn" onclick="toggleGuide()">PANDUAN</button>
       <button class="btn" onclick="showResults()">HASIL BELAJAR</button>
     </div>
-    <div id="guide"><b>Cara bermain</b><br>• Komputer: WASD untuk bergerak, mouse untuk melihat, E untuk memeriksa objek, Space untuk melompat.<br>• HP/tablet: gunakan tombol arah di kiri, lalu tombol Periksa/Lompat di kanan.<br>• Dekati Profesor Bio atau kristal organ yang bercahaya untuk memulai tantangan. Jawaban benar memberi poin dan token.<br>• Zona terbuka dalam satu arena; cari empat kristal organ berwarna di sekitar laboratorium.</div>
+    <div id="guide"><b>Cara bermain</b><br>• Komputer: WASD untuk bergerak, mouse untuk melihat, E untuk memeriksa objek, Space untuk melompat.<br>• HP/tablet: Geser/sentuh layar untuk memutar pandangan 360 derajat di sekitar karakter, gunakan tombol arah di kiri untuk berjalan.<br>• Dekati Profesor Bio atau kristal organ yang bercahaya untuk memulai tantangan.</div>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
 let scene,camera,renderer,player,clock,keys={},yaw=0,pitch=-.16,started=false,paused=false,questionOpen=false,score=0,tokenCount=0,completed=new Set(),currentQuestion=null,nearby=null,velocityY=0,onGround=true;
+let isDragging=false,previousTouchX=0,previousTouchY=0;
+
 const zones=[
  {id:'kidney',name:'Kidney City · Ginjal',color:0xff5c85,pos:[-13,0,-8],token:'TOKEN GINJAL',desc:'Ginjal menyaring darah dan membantu membentuk urine.',qs:[
  {q:'Unit fungsional ginjal disebut …',a:['Neuron','Alveolus','Nefron','Vili'],c:2,why:'Nefron adalah unit struktural dan fungsional ginjal.'},
@@ -139,12 +135,42 @@ function init(){
  renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;el('game').appendChild(renderer.domElement);
  clock=new THREE.Clock();scene.add(new THREE.HemisphereLight(0xd9f7ff,0x294363,2.1));
  const sun=new THREE.DirectionalLight(0xffffff,2.3);sun.position.set(-15,28,18);sun.castShadow=true;scene.add(sun);
- makeWorld();makePlayer();setupControls();addEventListener('resize',resize);renderer.domElement.addEventListener('click',()=>{if(started&&!questionOpen&&!paused&&innerWidth>768)renderer.domElement.requestPointerLock?.()});
+ makeWorld();makePlayer();setupControls();setupTouchRotation();addEventListener('resize',resize);
+ 
+ renderer.domElement.addEventListener('click',()=>{if(started&&!questionOpen&&!paused&&innerWidth>768)renderer.domElement.requestPointerLock?.()});
  document.addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement&&started&&!paused){yaw-=e.movementX*.0024;pitch=Math.max(-.65,Math.min(.35,pitch-e.movementY*.0018))}});
  document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.code==='Space'){e.preventDefault();jump()}if(e.key.toLowerCase()==='e')interact();if(e.key==='Escape'&&started)togglePause()});
  document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
  animate();
 }
+
+function setupTouchRotation(){
+  const canvas = renderer.domElement;
+  canvas.addEventListener('touchstart', e=>{
+    if(e.touches.length === 1 && started && !paused) {
+      isDragging = true;
+      previousTouchX = e.touches[0].clientX;
+      previousTouchY = e.touches[0].clientY;
+    }
+  }, {passive: true});
+
+  canvas.addEventListener('touchmove', e=>{
+    if(!isDragging || !started || paused) return;
+    let currentX = e.touches[0].clientX;
+    let currentY = e.touches[0].clientY;
+    let deltaX = currentX - previousTouchX;
+    let deltaY = currentY - previousTouchY;
+
+    yaw -= deltaX * 0.007;
+    pitch = Math.max(-0.65, Math.min(0.35, pitch - deltaY * 0.005));
+
+    previousTouchX = currentX;
+    previousTouchY = currentY;
+  }, {passive: true});
+
+  canvas.addEventListener('touchend', ()=>{ isDragging = false; }, {passive: true});
+}
+
 function mat(color,rough=.75,metal=0){return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal})}
 function box(x,y,z,sx,sy,sz,color,opts={}){let m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mat(color,.75,opts.metal||0));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m}
 function sphere(x,y,z,r,color,sx=1,sy=1,sz=1){let m=new THREE.Mesh(new THREE.SphereGeometry(r,24,18),mat(color,.45,.05));m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;scene.add(m);return m}
@@ -237,9 +263,14 @@ function animate(){
   if(!completed.has('intro')&&Math.hypot(p.x,p.z+10)<3.5)nearby={kind:'prof',name:'Profesor Bio'};
   zones.forEach(z=>{if(!completed.has(z.id)&&Math.hypot(p.x-z.pos[0],p.z-(z.pos[2]-3.1))<3.3)nearby={kind:'zone',zone:z,name:z.name}});
   if(completed.size===5&&Math.hypot(p.x,p.z-25)<5)nearby={kind:'final',name:'Final Challenge'};
-  camera.position.lerp(new THREE.Vector3(p.x+Math.sin(yaw)*8,p.y+4.2,p.z+Math.cos(yaw)*8),.12);
-  camera.lookAt(p.x,p.y+1.15,p.z);
-  if(nearby){el('helpLine').textContent='E / PERIKSA: '+nearby.name+' · Dekati objek untuk berinteraksi'}else el('helpLine').textContent=innerWidth<768?'Gunakan tombol arah · Periksa objek dengan tombol kanan':'WASD bergerak · Klik dunia lalu gerakkan mouse untuk melihat · E interaksi';
+  
+  let camX = p.x + Math.sin(yaw) * Math.cos(pitch) * 8;
+  let camY = p.y + 1.15 + Math.sin(pitch) * 8 + 2;
+  let camZ = p.z + Math.cos(yaw) * Math.cos(pitch) * 8;
+  camera.position.lerp(new THREE.Vector3(camX, Math.max(1, camY), camZ), .15);
+  camera.lookAt(p.x, p.y + 1.15, p.z);
+
+  if(nearby){el('helpLine').textContent='E / PERIKSA: '+nearby.name+' · Dekati objek untuk berinteraksi'}else el('helpLine').textContent=innerWidth<768?'Geser layar: putar pandangan 360° · Tombol D-Pad: bergerak':'WASD bergerak · Klik dunia lalu gerakkan mouse untuk melihat · E interaksi';
   updateHUD();
  }
  renderer.render(scene,camera);
